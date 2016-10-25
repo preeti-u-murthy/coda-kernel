@@ -29,26 +29,12 @@
 static ssize_t
 coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
-    //int err;
 	struct file *coda_file = iocb->ki_filp;
 	struct coda_file_info *cfi = CODA_FTOC(coda_file);
-    //struct inode *coda_inode = file_inode(coda_file);
-    ssize_t size;
 
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
-    /* Test for 15-821 project: Begin commit */
-    printk("coda_read\n");
-    /*
-     * Below is the first attempt at extracting the file position
-     * and the number of bytes to read
-     * file offset: iocb->ppos; #bytes to read: iov_length(to->iov, to->count) ???
-     * what does to->offset, to->count hold ?
-     */
-	size = vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
-    printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, size);
-    /* End commit: only printk statements in the above range belong to the commit */ 
-    return size;
+	return vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
 }
 
 static ssize_t

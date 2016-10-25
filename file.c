@@ -31,10 +31,16 @@ coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
 	struct file *coda_file = iocb->ki_filp;
 	struct coda_file_info *cfi = CODA_FTOC(coda_file);
+    ssize_t size;
+    
+    /* Test for 15-821 project */
+    printk("coda_read\n");
 
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
-	return vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
+    size = vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
+    printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, size);
+    return size;
 }
 
 static ssize_t

@@ -19,6 +19,7 @@
 #include <linux/string.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/uio.h>
 
 #include <linux/coda.h>
 #include <linux/coda_psdev.h>
@@ -38,8 +39,8 @@ coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
+    printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, iov_iter_count(to));
     size = vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
-    printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, size);
     return size;
 }
 

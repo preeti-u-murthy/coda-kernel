@@ -156,19 +156,6 @@ int venus_lookup(struct super_block *sb, struct CodaFid *fid,
 	return error;
 }
 
-int venus_read(struct super_block *sb)
-{
-	union inputArgs *inp;
-	union outputArgs *outp;
-	int insize, outsize, error;
-
-	insize = SIZE(release);
-    UPARG(CODA_READ);
-
-    error = coda_upcall(coda_vcp(sb), insize, &outsize, inp);
-    return error;
-}
-
 int venus_close(struct super_block *sb, struct CodaFid *fid, int flags,
 		kuid_t uid)
 {
@@ -209,6 +196,23 @@ int venus_open(struct super_block *sb, struct CodaFid *fid,
 	CODA_FREE(inp, insize);
 	return error;
 }	
+
+int venus_read_write(struct super_block *sb, struct CodaFid *fid,
+                        loff_t read_offset)
+{
+    union inputArgs *inp;
+    union outputArgs *outp;
+    int insize, outsize, error;
+
+    insize = INSIZE(read_write);
+    UPARG(CODA_READ_WRITE);
+    inp->coda_read_write.read_offset = read_offset;
+    inp->coda_read_write.VFid = *fid;
+    
+    error = coda_upcall(coda_vcp(sb), insize, &outsize, inp);
+    CODA_FREE(inp, insize);
+    return error;
+}
 
 int venus_mkdir(struct super_block *sb, struct CodaFid *dirfid, 
 		   const char *name, int length, 

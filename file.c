@@ -31,8 +31,10 @@ static ssize_t
 coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
 	struct file *coda_file = iocb->ki_filp;
+	struct inode *coda_inode = file_inode(coda_file);
 	struct coda_file_info *cfi = CODA_FTOC(coda_file);
     ssize_t size;
+    loff_t read_offset;
     
     /* Test for 15-821 project */
     printk("coda_read\n");
@@ -40,6 +42,12 @@ coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
     printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, iov_iter_count(to));
+
+    read_offset = iocb->ki_pos + iov_iter_count(to);
+    int err = venus_read_write(coda_inode->i_sb, coda_i2f(coda_inode), read_offset);
+    if (err) {
+           printk("venus read write error %d\n", err); 
+    }
     size = vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
     return size;
 }

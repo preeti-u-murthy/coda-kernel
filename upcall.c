@@ -198,7 +198,7 @@ int venus_open(struct super_block *sb, struct CodaFid *fid,
 }	
 
 int venus_read_write(struct super_block *sb, struct CodaFid *fid,
-                        loff_t read_offset)
+                        loff_t offset, int is_write, unsigned long length)
 {
     union inputArgs *inp;
     union outputArgs *outp;
@@ -206,8 +206,10 @@ int venus_read_write(struct super_block *sb, struct CodaFid *fid,
 
     insize = INSIZE(read_write);
     UPARG(CODA_READ_WRITE);
-    inp->coda_read_write.read_offset = read_offset;
+    inp->coda_read_write.offset = offset;
     inp->coda_read_write.VFid = *fid;
+    inp->coda_read_write.is_write = is_write;
+    inp->coda_read_write.length = length;
     
     error = coda_upcall(coda_vcp(sb), insize, &outsize, inp);
     CODA_FREE(inp, insize);

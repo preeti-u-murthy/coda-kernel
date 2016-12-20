@@ -34,7 +34,9 @@ coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	struct inode *coda_inode = file_inode(coda_file);
 	struct coda_file_info *cfi = CODA_FTOC(coda_file);
     ssize_t size;
-    loff_t read_offset;
+    loff_t offset;
+    int is_write = 0;
+    int length = 0; // Only write sets this
     
     /* Test for 15-821 project */
     printk("coda_read\n");
@@ -43,10 +45,10 @@ coda_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 
     printk("The read is at offset %lld, #bytes read = %ld", iocb->ki_pos, iov_iter_count(to));
 
-    read_offset = iocb->ki_pos + iov_iter_count(to);
-    int err = venus_read_write(coda_inode->i_sb, coda_i2f(coda_inode), read_offset);
+    offset = iocb->ki_pos + iov_iter_count(to);
+    int err = venus_read_write(coda_inode->i_sb, coda_i2f(coda_inode), offset, is_write, length);
     if (err) {
-           printk("venus read write error %d\n", err); 
+           printk("venus read error %d\n", err); 
     }
     size = vfs_iter_read(cfi->cfi_container, to, &iocb->ki_pos);
     return size;
@@ -80,10 +82,17 @@ coda_file_write_iter(struct kiocb *iocb, struct iov_iter *to)
 	struct inode *coda_inode = file_inode(coda_file);
 	struct coda_file_info *cfi = CODA_FTOC(coda_file);
 	struct file *host_file;
+    loff_t offset;
+    int is_write = 1;
+    int length = 0; // Only write sets this
 	ssize_t ret;
 
 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
 
+    //save the offset and length
+    offset = iocb->ki_pos;
+    length = iov_iter_count(to);
+    printk("The write is at offset %lld, #bytes to write = %ld", iocb->ki_pos, iov_iter_count(to));
 	host_file = cfi->cfi_container;
 	file_start_write(host_file);
 	mutex_lock(&coda_inode->i_mutex);
@@ -93,6 +102,14 @@ coda_file_write_iter(struct kiocb *iocb, struct iov_iter *to)
 	coda_inode->i_mtime = coda_inode->i_ctime = CURRENT_TIME_SEC;
 	mutex_unlock(&coda_inode->i_mutex);
 	file_end_write(host_file);
+
+    // The write time to push the write ?
+    if (ret > 0) {
+        int err = venus_read_write(coda_inode->i_sb, coda_i2f(coda_inode), offset, is_write, length);
+        if (err) {
+               printk("venus write error %d\n", err); 
+        }
+    }
 	return ret;
 }
 
